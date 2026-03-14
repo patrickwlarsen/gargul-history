@@ -13,7 +13,7 @@ A companion addon for [Gargul](https://www.curseforge.com/wow/addons/gargul) tha
 
   Click any column header to sort ascending/descending.
 - **Item Tooltips** - Hover any row to see the full item tooltip.
-- **Export** - Export your full history as JSON. The export window lets you select all and copy the data for use in external tools, spreadsheets, or websites.
+- **Export** - Export your full history as **JSON** or **CSV**. Toggle between formats in the export window, then select all and copy the data for use in external tools, spreadsheets, or websites.
 - **Clear History** - Remove all recorded entries with a confirmation prompt.
 
 ## Requirements
@@ -41,12 +41,12 @@ bash deploy.sh
 
 1. **Viewing History** - Click the Gargul History minimap icon (book icon) to open the history window.
 2. **Sorting** - Click the **Date**, **Player**, or **Item** column headers to sort. Click again to reverse the sort order. An arrow indicator shows the current sort direction.
-3. **Exporting** - Click the **Export** button at the bottom of the history window. A new window will appear with your history as JSON. Press `Ctrl+A` to select all, then `Ctrl+C` to copy.
+3. **Exporting** - Click the **Export** button at the bottom of the history window. A new window will appear with format toggle buttons for **JSON** and **CSV**. Select your preferred format, then press `Ctrl+A` to select all and `Ctrl+C` to copy.
 4. **Clearing** - Click the **Clear History** button to remove all entries. You will be asked to confirm before anything is deleted.
 
-## Export Format
+## Export Formats
 
-The export produces a JSON array with the following structure:
+### JSON
 
 ```json
 [
@@ -59,6 +59,13 @@ The export produces a JSON array with the following structure:
     }
   }
 ]
+```
+
+### CSV
+
+```csv
+Date,Player,Item,ItemID
+2026-03-13 20:15:00,Playername,"Thunderfury, Blessed Blade of the Windseeker",19019
 ```
 
 ## Data Storage

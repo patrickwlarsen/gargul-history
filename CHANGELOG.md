@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.1.0 - 2026-03-14
+
+### Added
+- CSV export format option alongside JSON.
+- Format toggle buttons (JSON / CSV) in the export window.
+
 ## v1.0.0 - 2026-03-13
 
 ### Added
