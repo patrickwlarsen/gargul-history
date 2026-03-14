@@ -9,6 +9,7 @@ local HistoryUI = {
     Rows = {},
     sortField = "date",  -- "date", "player", "item"
     sortAscending = false, -- newest first by default
+    exportFormat = "JSON", -- "JSON" or "CSV"
 }
 
 GH.HistoryUI = HistoryUI
@@ -426,7 +427,7 @@ function HistoryUI:HistoryToJSON()
     return "[" .. table.concat(parts, ",") .. "]"
 end
 
---- Show the export window with copyable JSON text
+--- Show the export window with copyable text (JSON or CSV)
 function HistoryUI:ShowExportWindow()
     -- Reuse existing window if it exists
     if self.ExportWindow then
@@ -470,21 +471,65 @@ function HistoryUI:ShowExportWindow()
     Title:SetTextColor(unpack(COLOR_TITLE))
     Title:SetText("Export History")
 
-    -- Hint
-    local Hint = Window:CreateFontString(nil, "OVERLAY")
-    Hint:SetFont(FONT, 11)
-    Hint:SetPoint("TOPLEFT", Window, "TOPLEFT", 12, -30)
-    Hint:SetTextColor(0.7, 0.7, 0.7, 1)
-    Hint:SetText("Press Ctrl+A to select all, then Ctrl+C to copy.")
-
     -- Close button (parented to TitleBar so it stays above it for clicks)
     local CloseButton = CreateFrame("Button", nil, TitleBar, "UIPanelCloseButton")
     CloseButton:SetPoint("TOPRIGHT", Window, "TOPRIGHT", -2, -2)
     CloseButton:HookScript("OnClick", function() Window:Hide() end)
 
+    -- Format selector row
+    local FormatLabel = Window:CreateFontString(nil, "OVERLAY")
+    FormatLabel:SetFont(FONT, 11)
+    FormatLabel:SetPoint("TOPLEFT", Window, "TOPLEFT", 12, -32)
+    FormatLabel:SetTextColor(0.7, 0.7, 0.7, 1)
+    FormatLabel:SetText("Format:")
+
+    -- Format toggle buttons
+    local formats = { "JSON", "CSV" }
+    local formatButtons = {}
+    local prevBtn
+    for i, fmt in ipairs(formats) do
+        local btn = CreateFrame("Button", nil, Window, "BackdropTemplate")
+        btn:SetSize(50, 20)
+        if i == 1 then
+            btn:SetPoint("LEFT", FormatLabel, "RIGHT", 8, 0)
+        else
+            btn:SetPoint("LEFT", prevBtn, "RIGHT", 4, 0)
+        end
+        btn:SetBackdrop({
+            bgFile = "Interface/Tooltips/UI-Tooltip-Background",
+            edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+            tile = true, tileSize = 8, edgeSize = 8,
+            insets = { left = 2, right = 2, top = 2, bottom = 2 },
+        })
+
+        local label = btn:CreateFontString(nil, "OVERLAY")
+        label:SetFont(FONT, 11, "OUTLINE")
+        label:SetPoint("CENTER")
+        label:SetText(fmt)
+        btn.label = label
+        btn.format = fmt
+
+        btn:SetScript("OnClick", function()
+            self.exportFormat = fmt
+            self:UpdateFormatButtons()
+            self:UpdateExportText()
+        end)
+
+        formatButtons[i] = btn
+        prevBtn = btn
+    end
+    self.formatButtons = formatButtons
+
+    -- Hint
+    local Hint = Window:CreateFontString(nil, "OVERLAY")
+    Hint:SetFont(FONT, 11)
+    Hint:SetPoint("LEFT", prevBtn, "RIGHT", 16, 0)
+    Hint:SetTextColor(0.5, 0.5, 0.5, 1)
+    Hint:SetText("Ctrl+A to select all, Ctrl+C to copy")
+
     -- Scroll frame for the edit box
     local ScrollFrame = CreateFrame("ScrollFrame", "GargulHistoryExportScrollFrame", Window, "UIPanelScrollFrameTemplate")
-    ScrollFrame:SetPoint("TOPLEFT", Window, "TOPLEFT", 12, -48)
+    ScrollFrame:SetPoint("TOPLEFT", Window, "TOPLEFT", 12, -56)
     ScrollFrame:SetPoint("BOTTOMRIGHT", Window, "BOTTOMRIGHT", -32, 12)
 
     -- Edit box (read-only multi-line text)
@@ -507,14 +552,64 @@ function HistoryUI:ShowExportWindow()
 
     tinsert(UISpecialFrames, "GargulHistoryExportWindow")
 
+    self:UpdateFormatButtons()
     self:UpdateExportText()
+end
+
+--- Update format button visual states
+function HistoryUI:UpdateFormatButtons()
+    if not self.formatButtons then return end
+    for _, btn in ipairs(self.formatButtons) do
+        if btn.format == self.exportFormat then
+            btn:SetBackdropColor(0.3, 0.3, 0.6, 0.9)
+            btn:SetBackdropBorderColor(0.59, 0.5, 0.82, 1)
+            btn.label:SetTextColor(1, 1, 1, 1)
+        else
+            btn:SetBackdropColor(0.15, 0.15, 0.15, 0.8)
+            btn:SetBackdropBorderColor(0.4, 0.4, 0.4, 1)
+            btn.label:SetTextColor(0.6, 0.6, 0.6, 1)
+        end
+    end
+end
+
+--- Escape a value for CSV (wrap in quotes if it contains commas, quotes, or newlines)
+local function csvEscape(value)
+    value = tostring(value)
+    if value:find('[,"\n]') then
+        return '"' .. value:gsub('"', '""') .. '"'
+    end
+    return value
+end
+
+--- Serialize history to CSV string
+function HistoryUI:HistoryToCSV()
+    local lines = { "Date,Player,Item,ItemID" }
+    for _, entry in ipairs(GH.history) do
+        local itemName = entry.item and entry.item.name or "Unknown"
+        local itemId = entry.item and entry.item.id or "0"
+        local awardedTo = entry.awardedTo or "Unknown"
+        local entryDate = entry.date or ""
+
+        table.insert(lines, string.format("%s,%s,%s,%s",
+            csvEscape(entryDate),
+            csvEscape(awardedTo),
+            csvEscape(itemName),
+            csvEscape(itemId)
+        ))
+    end
+    return table.concat(lines, "\n")
 end
 
 --- Update the export text content
 function HistoryUI:UpdateExportText()
     if not self.ExportEditBox then return end
-    local jsonText = self:HistoryToJSON()
-    self.ExportEditBox:SetText(jsonText)
+    local text
+    if self.exportFormat == "CSV" then
+        text = self:HistoryToCSV()
+    else
+        text = self:HistoryToJSON()
+    end
+    self.ExportEditBox:SetText(text)
     -- Defer highlight/focus to next frame so layout is complete
     C_Timer.After(0, function()
         if self.ExportScrollFrame then
