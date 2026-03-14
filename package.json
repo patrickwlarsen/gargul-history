@@ -1,6 +1,6 @@
 {
   "name": "gargul-history",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Gargul loot distribution addon for World of Warcraft",
   "scripts": {
     "deploy": "bash deploy.sh"

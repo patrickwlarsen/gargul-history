@@ -1,8 +1,8 @@
 ## Interface: 20505
-## Title: Gargul History |c00967FD2v1.0.0|r
+## Title: Gargul History |c00967FD2v1.1.0|r
 ## Notes: Tracks and displays loot award history from Gargul
 ## Author: Gargul History
-## Version: 1.0.0
+## Version: 1.1.0
 ## DefaultState: enabled
 ## Dependencies: Gargul
 ## SavedVariables: GargulHistoryDB
